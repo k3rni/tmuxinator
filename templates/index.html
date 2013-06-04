@@ -1,0 +1,52 @@
+<html>
+<head>
+<title>Tmuxtool</title>
+<script type="text/javascript" src="{{ static('jquery-1.10.1.js') }}"></script>
+</head>
+<body>
+<h1>tmux</h1>
+<div id="viewer">
+  <div id="new">
+    <button id="add_pane">+</button>
+  </div>
+</div>
+<div class="pane_template" style="border: 1px solid black; display: none">
+  <button class="close">zamknij</button>
+  <select class="list_panes"></select>
+  <div class="screen" style="background: black; color: white; font-family: monospace; width: 80em; height: 24em">
+    Loading...
+  </div>
+</div>
+<script type="text/javascript">
+function update_panes_list(select) {
+  $.get('/active_panes.json', function(data, status, xhr) {
+    data.forEach(function(v, i) {
+      select.append('<option value='+v+'>'+v+'</option>')
+    })
+  }, 'json')
+}
+function load_pane_content(name, callback) {
+  $.get('/pane/' + name, function(data, status, xhr) {
+    callback(data)
+  });
+}
+$(function() {
+  $('#add_pane').click(function() {
+    var viewer = $('#viewer');
+    var pane = $('.pane_template').clone();
+    pane.attr('class', 'pane');
+    pane.css('display', '');
+    viewer.prepend(pane);
+    update_panes_list(pane.find('select'));
+  })
+  $(document).on('change', '.list_panes', function() {
+    var pane = $(this).siblings('.screen');
+    load_pane_content($(this).val(), function(pane_content) {
+      pane.html('<pre>' + pane_content + '</pre>')
+    });
+  });
+
+})
+</script>
+</body>
+</html>
