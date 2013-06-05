@@ -10,7 +10,8 @@ To install and run:
 1. use virtualenv, if preferred
 2. pip install -r requirements.txt
 3. ./tmux.py
-4. run some tmux sessions and screens
+4. run some tmux sessions
+5. point your browser at localhost:5000
 
 Better install instructions and running under Passenger yet to come.
  
