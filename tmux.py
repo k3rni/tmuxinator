@@ -40,7 +40,7 @@ def active_panes():
 @app.route('/pane/<name>')
 def read_pane(name):
   if color_support:
-    return Ansi2HTMLConverter().convert(subprocess.check_output('tmux capture-pane -t %s -e -b 0; tmux save-buffer -b 0 -' % name, shell=True))
+    return Ansi2HTMLConverter().convert(subprocess.check_output('tmux capture-pane -t %s -e -b 0; tmux save-buffer -b 0 -' % name, shell=True).decode('utf-8'))
   else:
     return "<pre>%s</pre>" % subprocess.check_output('tmux capture-pane -t %s -b 0; tmux save-buffer -b 0 -' % name, shell=True)
 
