@@ -2,6 +2,9 @@
 <head>
 <title>Tmuxtool</title>
 <script type="text/javascript" src="{{ static('jquery-1.10.1.js') }}"></script>
+<style type="text/css">
+/*pre { font-family: "Blah Blah", monospace, serif; font-size: 1em; }*/
+</style>
 </head>
 <body>
 <h1>tmux</h1>
@@ -10,10 +13,16 @@
     <button id="add_pane">+</button>
   </div>
 </div>
-<div class="pane_template" style="border: 1px solid black; display: none">
-  <button class="close">zamknij</button>
+<div class="pane_template" style="border: 1px solid black; display: none; float:left">
+  <button class="close_pane">zamknij</button>
   <select class="list_panes"></select>
-  <div class="screen" style="background: black; color: white; font-family: monospace; width: 80em; height: 24em">
+  <label>
+    <input type="checkbox" class="autorefresh">
+    refresh?
+  </label>
+  <button class="embiggen">A+</button>
+  <button class="shrinken">A-</button>
+  <div class="screen" style="background: black; color: white; font-family: monospace; width: 80em; height: 24ex">
     Loading...
   </div>
 </div>
@@ -21,14 +30,34 @@
 function update_panes_list(select) {
   $.get('/active_panes.json', function(data, status, xhr) {
     data.forEach(function(v, i) {
-      select.append('<option value='+v+'>'+v+'</option>')
+      var name = v.session + ':' + v.window + '.' + v.pane;
+      select.append('<option value='+name+' data-width='+v.width+' data-height='+v.height+'>'+name+'</option>')
     })
   }, 'json')
 }
 function load_pane_content(name, callback) {
   $.get('/pane/' + name, function(data, status, xhr) {
-    callback(data)
+    callback(data, name)
   });
+}
+var active_panes = {};
+function unregister_refresh(pane) {
+  active_panes[$(pane).attr('id')] = false;
+}
+function register_refresh(pane) {
+  active_panes[$(pane).attr('id')] = true;
+}
+function refresh_panes() {
+  for (var id in active_panes) {
+    var refresh = active_panes[id];
+    if (refresh) {
+      load_pane_content(id, function(pane_content, id) {
+        var pane = $('[id="'+id+'"]');
+        var screen = pane.find('.screen');
+        screen.html(pane_content)
+      });
+    }
+  }
 }
 $(function() {
   $('#add_pane').click(function() {
@@ -39,13 +68,41 @@ $(function() {
     viewer.prepend(pane);
     update_panes_list(pane.find('select'));
   })
-  $(document).on('change', '.list_panes', function() {
+  $(document).on('click', 'button.close_pane', function() {
+    var pane = $(this).closest('div.pane');
+    unregister_refresh(pane);
+    pane.remove();
+  })
+  $(document).on('change', 'input.autorefresh', function() {
+    if ($(this).is(':checked')) {
+      register_refresh($(this).closest('div.pane'));
+    } else {
+      unregister_refresh($(this).closest('div.pane'));
+    }
+  })
+  $(document).on('click', '.embiggen', function() {
+    var fs = (Number($(this).siblings('.screen').css('font-size').replace('px', '')));
+    $(this).siblings('.screen').css('font-size', fs + 1);
+  });
+  $(document).on('click', '.shrinken', function() {
+    var fs = (Number($(this).siblings('.screen').css('font-size').replace('px', '')));
+    $(this).siblings('.screen').css('font-size', fs - 1);
+  });
+  $(document).on('click', '.list_panes', function() {
     var pane = $(this).siblings('.screen');
+    var sel = this;
+    unregister_refresh($(pane).closest('div.pane'));
+    $(pane).closest('div.pane').attr('id', $(this).val());
+    $(this).parents('.pane').find('input.autorefresh').attr('checked', false)
     load_pane_content($(this).val(), function(pane_content) {
-      pane.html('<pre>' + pane_content + '</pre>')
+      var width = $(sel).find('option:checked').data('width');
+      var height = $(sel).find('option:checked').data('height');
+      pane.css('width', width + 'ch'); 
+      pane.css('height', 'auto');
+      pane.html(pane_content)
     });
   });
-
+  setInterval(refresh_panes, 1000);
 })
 </script>
 </body>
