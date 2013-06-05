@@ -2,7 +2,8 @@
 # encoding: utf-8
 
 from flask import Flask, render_template, url_for
-import json, subprocess, re
+import json, subprocess, re 
+from ansi2html import Ansi2HTMLConverter
 
 app = Flask(__name__)
 color_support = False
